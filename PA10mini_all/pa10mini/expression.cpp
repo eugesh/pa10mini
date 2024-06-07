@@ -184,60 +184,60 @@ void Expression::getderivative(int id_)
 //simplify tree
 void Expression::simplify()
 {
-    if (left != 0)
+    if (left != nullptr)
         left->simplify();
-    if (right != 0)
+    if (right != nullptr)
         right->simplify();
     if (type == _operator)
     {
         switch(op)
         {
         case _plus:
-            if (left->type == _constant && right->type == _constant)
+            if (left != nullptr && right != nullptr && left->type == _constant && right->type == _constant)
                 toConst(left->value + right->value);
-            else if (left->isConst(0.0)) //0 + a = 0
+            else if (left != nullptr && left->isConst(0.0)) //0 + a = 0
                 toRight();
-            else if (right->isConst(0.0)) //a + 0 = 0
+            else if (right != nullptr && right->isConst(0.0)) //a + 0 = 0
                 toLeft();
             break;
         case _minus:
-            if (left->type == _constant && right->type == _constant)
+            if (left != nullptr && right != nullptr && left->type == _constant && right->type == _constant)
                 toConst(left->value - right->value);
-            else if (right->isConst(0.0)) //a - 0 = 0;
+            else if (right != nullptr && right->isConst(0.0)) //a - 0 = 0;
                 toLeft();
-            else if (left->isConst(0.0)) //0 - a = -1 * a
+            else if (left != nullptr && left->isConst(0.0)) //0 - a = -1 * a
             {
                 op = _multiplication;
                 left->toConst(-1.0);
             }
             break;
         case _multiplication:
-            if (left->type == _constant && right->type == _constant)
+            if (left != nullptr && right != nullptr && left->type == _constant && right->type == _constant)
                 toConst(left->value * right->value);
-            else if (left->isConst(0.0))
+            else if (left != nullptr && left->isConst(0.0))
                 toLeft();
-            else if (right->isConst(0.0)) //a * 0 = 0 * a = 0
+            else if (right != nullptr && right->isConst(0.0)) //a * 0 = 0 * a = 0
                 toRight();
-            else if (left->isConst(1.0)) //a * 1 = a;
+            else if (left != nullptr && left->isConst(1.0)) //a * 1 = a;
                 toRight();
-            else if (right->isConst(1.0)) //1 * a = a;
+            else if (right != nullptr && right->isConst(1.0)) //1 * a = a;
                 toLeft();
             break;
         case _division:
-            if (left->type == _constant && right->type == _constant)
+            if (left != nullptr && right != nullptr && left->type == _constant && right->type == _constant)
                 toConst(left->value / right->value);
-            else if (left->isConst(0.0)) //0 / a = 0
+            else if (left != nullptr && left->isConst(0.0)) //0 / a = 0
                 toConst(0.0);
-            else if (right->isConst(1.0)) //a / 1 = a
+            else if (right != nullptr && right->isConst(1.0)) //a / 1 = a
                 toRight();
             break;
         case _power:
-            if (left->type == _constant && right->type == _constant)
+            if (left != nullptr && right != nullptr && left->type == _constant && right->type == _constant)
                 toConst(pow(left->value, right->value));
-            if (right->isConst(0.0)) //a ^ 0 = 1
+            if (right != nullptr && right->isConst(0.0)) //a ^ 0 = 1
                 toConst(1.0);
-            else if (right->isConst(0.0)) //a ^ 1 = a
-                toRight();
+            else if (right != nullptr && right->isConst(1.0)) //a ^ 1 = a
+                toLeft();
             break;
         }
     }
