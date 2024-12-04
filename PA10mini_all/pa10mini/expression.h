@@ -12,7 +12,8 @@ enum ContentType
     _variable,
     _constant,
     _operator,
-    _function
+    _function,
+    _source_code
 };
 
 
@@ -28,7 +29,7 @@ enum Operator
 
 enum Function
 {
-    _ln,
+    _ln = 10,
     _sin,
     _cos
 };

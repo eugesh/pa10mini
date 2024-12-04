@@ -115,7 +115,48 @@ void Expression::getderivative(int id_)
                 }
             case _power:
                 {
-                    op = _multiplication;
+                    if (right->type == _constant && left->type == _variable) {
+                        // (x^a)' = a * x^(a - 1)
+                        op = _multiplication;
+                        Expression* tmp1 = new Expression(_power, left->copy(), new Expression(right->value - 1));
+                        Expression* tmp2 = new Expression(_multiplication, right->copy(), tmp1);
+                        left = tmp1;
+                        right = tmp2;
+                    }
+
+                    if (right->type == _constant && left->type == _function) {
+                        //(x^a)' = a * x^(a - 1) * x'
+                        op = _multiplication;
+                        Expression* tmp1 = new Expression(_power, left->copy(), new Expression(right->value - 1));
+                        left->getderivative(id_);
+                        Expression* tmp2 = new Expression(_multiplication, left->copy(), tmp1);
+                        Expression* tmp3 = new Expression(_multiplication, right->copy(), tmp2);
+                        left = tmp2;
+                        right = tmp3;
+                    }
+
+
+                    if (left->type == _constant && right->type == _variable) {
+                        // (a^x)' = ln(a) * a^x
+                        op = _multiplication;
+                        Expression* tmp1 = new Expression(_ln, new Expression(left->value)); // left->copy()
+                        Expression* tmp2 = new Expression(_power, new Expression(left->value), right->copy()); // left->copy()
+                        left = tmp1;
+                        right = tmp2;
+                    }
+
+                    if (left->type == _constant && right->type == _function) {
+                        // (a^x)' = ln(a) * x' * a^x
+
+                        op = _multiplication;
+                        Expression* tmp1 = new Expression(_ln, new Expression(left->value));
+                        left->getderivative(id_);
+                        Expression* tmp2 = new Expression(_multiplication, left->copy(), tmp1);
+                        Expression* tmp3 = new Expression(_power, new Expression(left->value), right->copy());
+                        left = tmp2;
+                        right = tmp3;
+                    }
+                    /*op = _multiplication;
                     Expression* tmp1 = new Expression(_power, left, right);
                     if (type == _constant && value != 1)
                     {
@@ -143,7 +184,7 @@ void Expression::getderivative(int id_)
                         tmp1->right->right = left->left->copy();
 
                         right->right = tmp1;
-                    }
+                    }*/
                     break;
                 }
             }
