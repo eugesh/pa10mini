@@ -1,5 +1,8 @@
 #include "equaledit.h"
 
+#include <iostream>
+#include <QSettings>
+
 EqualEdit::EqualEdit(QWidget *parent) : QPlainTextEdit(parent)
 {
     lineNumberArea = new LineNumberArea(this);
@@ -11,7 +14,6 @@ EqualEdit::EqualEdit(QWidget *parent) : QPlainTextEdit(parent)
     updateLineNumberAreaWidth(0);
     highlightCurrentLine();
 
-    fileName = QString("default");
     wasChanged = false;
 }
 
@@ -124,7 +126,6 @@ void EqualEdit::createNew()
             break;
         }
     }
-    fileName = QString("default");
     wasChanged = false;
     clear();
 }
@@ -150,10 +151,17 @@ void EqualEdit::open()
             break;
         }
     }
-    fileName = QFileDialog::getOpenFileName(this, tr("Открыть файл"), "tests", tr("(*.*)"));
+
+    QSettings settings("PAXMINI", "CADCAMCAE6BMSTU");
+
+    fileName = fileName.isEmpty() ? settings.value("LastEquationsPath").toString() : fileName;
+
+    fileName = QFileDialog::getOpenFileName(this, tr("Открыть файл"), fileName, tr("(*.*)"));
     QFile txtFile(fileName);
-    if (!txtFile.open(QIODevice::ReadOnly | QIODevice::Text))
+    if (!txtFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        std::cerr << "Warn: empty filename string!";
         return;
+    }
     QTextStream in(&txtFile);
     clear();
     setUndoRedoEnabled(false);
@@ -164,6 +172,7 @@ void EqualEdit::open()
     txtFile.close();
     setUndoRedoEnabled(true);
     wasChanged = false;
+    settings.setValue("LastEquationsPath", fileName);
 }
 
 void EqualEdit::textWasChanged()
@@ -185,7 +194,7 @@ void EqualEdit::saveAs()
 
 void EqualEdit::save()
 {
-    if (fileName == "default")
+    if (fileName.isEmpty())
         fileName = QFileDialog::getSaveFileName(this, tr("Сохранить файл как"), "", tr("(*.txt)"));
     QFile txtFile(fileName);
     if (!txtFile.open(QIODevice::WriteOnly | QIODevice::Text))

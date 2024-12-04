@@ -50,7 +50,6 @@ PAX_Prototype::PAX_Prototype(QWidget *parent, Qt::WindowFlags flags)
 
     m_statusBar = new QStatusBar();
     setStatusBar(m_statusBar);
-    m_schemePath = "scheme.json";
     qApp->setApplicationVersion(tr("%1.%2.%3").arg(major).arg(minor).arg(patch));
 }
 
@@ -218,8 +217,18 @@ void PAX_Prototype::saveSchemeSlot()
 
 void PAX_Prototype::loadSchemeSlot()
 {
+    QSettings settings("PAXMINI", "CADCAMCAE6BMSTU");
+
+    m_schemePath = m_schemePath.isEmpty() ? settings.value("LastSchemePath").toString() : m_schemePath;
+
     m_schemePath = QFileDialog::getOpenFileName(this, tr("Открыть файл схемы"), m_schemePath, tr("JSON Files (*.json)"));
-    loadScheme(m_schemePath);
+
+    if (m_schemePath.isEmpty()) {
+        cerr << "Warn: empty filename string!";
+    } else {
+        settings.setValue("LastSchemePath", m_schemePath);
+        loadScheme(m_schemePath);
+    }
 }
 
 void PAX_Prototype::saveSchemeAsSlot()
