@@ -154,6 +154,7 @@ void EqualEdit::open()
 
     QSettings settings("PAXMINI", "CADCAMCAE6BMSTU");
 
+    fileName = "D:/workspace/bmstu/pa10project/PA10mini_all/pa10mini/tests/test_Van_der_Pol_equations.txt";
     fileName = fileName.isEmpty() ? settings.value("LastEquationsPath").toString() : fileName;
 
     fileName = QFileDialog::getOpenFileName(this, tr("Открыть файл"), fileName, tr("(*.*)"));

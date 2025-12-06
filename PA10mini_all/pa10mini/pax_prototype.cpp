@@ -147,7 +147,7 @@ void PAX_Prototype::solve()
 
     try {
         solver->solve(m_pathToMinGW);
-    } catch(invalid_argument& e) {
+    } catch (invalid_argument& e) {
         cerr << e.what() << endl;
         getchar();
         return;
