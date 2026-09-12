@@ -152,13 +152,17 @@ void Expression::getderivative(int id_)
             switch(fn)
             {
             case _ln:
-                right = copy();
-                left = copy();
-                left->getderivative(id_);
+            {
+                Expression* argument = left;
+                Expression* argumentDerivative = argument->derivative(id_);
+
+                delete right;
+                left = argumentDerivative;
+                right = argument;
                 type = _operator;
                 op = _division;
-                fn = _sin;
                 break;
+            }
             case _sin:
                 left = copy();
                 right = left->left->copy();
