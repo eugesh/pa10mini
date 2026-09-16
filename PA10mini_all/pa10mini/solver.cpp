@@ -205,6 +205,19 @@ void Solver::solve(const QString &pathToCompiler)
     double t, h, tkv;
 
     int ncon, nbad, ier, *ip = nullptr;
+
+    if (system == nullptr)
+        throw std::invalid_argument("DAE system is not set");
+
+    n = system->countEquals();
+    m = system->countDerivatives();
+    const int variableCount = system->countVariables();
+    if (variableCount != n) {
+        throw std::invalid_argument(
+            "Invalid DAE system: number of variables (" + std::to_string(variableCount)
+            + ") must match number of equations (" + std::to_string(n) + ")");
+    }
+
     if (writeFile) {
         //std::system("mkdir output");
         QFileInfo info("output");
@@ -225,10 +238,6 @@ void Solver::solve(const QString &pathToCompiler)
         outTextStream = new QTextStream(outFile);
     }
 
-    n = system->countEquals();
-    m = system->countDerivatives();
-    // if (system->countVariables() > system->countEquals())
-    //    throw invalid_argument("NM!");
     // allocating memory
     z = new double[n + 1];
     px = new double[m + 1];

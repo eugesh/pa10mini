@@ -147,9 +147,13 @@ void PAX_Prototype::solve()
 
     try {
         solver->solve(m_pathToMinGW);
-    } catch(invalid_argument& e) {
-        cerr << e.what() << endl;
-        getchar();
+    } catch (const std::invalid_argument& e) {
+        showErr(QString::fromStdString(e.what()));
+        ui.progressBar->hide();
+        ui.solveButton->setEnabled(true);
+        ui.plotButton->setEnabled(true);
+        ui.plotButton_2->setEnabled(true);
+        delete param;
         return;
     }
 
