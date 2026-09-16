@@ -233,7 +233,7 @@ void Expression::simplify()
             else if (left != nullptr && left->isConst(0.0)) //0 / a = 0
                 toConst(0.0);
             else if (right != nullptr && right->isConst(1.0)) //a / 1 = a
-                toRight();
+                toLeft();
             break;
         case _power:
             if (left != nullptr && right != nullptr && left->type == _constant && right->type == _constant)
