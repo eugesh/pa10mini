@@ -1,9 +1,14 @@
-cmake_minimum_required(VERSION 3.10.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 project(PA10mini LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Qwt's Windows headers export/import symbols for shared builds, which is the
+# mode used by its CMake project. This remains configurable via
+# -DBUILD_SHARED_LIBS=OFF.
+option(BUILD_SHARED_LIBS "Build shared third-party libraries" ON)
 
 ################################################################################
 # Set target arch type if empty. Visual studio solution generator provides it.
@@ -77,10 +82,8 @@ include(CMake/GlobalSettingsInclude.cmake OPTIONAL)
 ################################################################################
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-find_package(qwt)
-
 ## Qt5
-find_package(Qt5 COMPONENTS Gui Core Widgets OpenGL REQUIRED)
+find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets OpenGL Concurrent PrintSupport Svg)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -91,15 +94,35 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 ################################################################################
 # Sub-projects
 ################################################################################
-include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/manzhuk/fcttask")
-include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/manzhuk")
+set(PA10MINI_THIRD_PARTY_DIR "${CMAKE_CURRENT_LIST_DIR}/../third_party")
+set(PA10MINI_QWT_DIR "${PA10MINI_THIRD_PARTY_DIR}/qwt")
+set(PA10MINI_LIBDL_DIR "${PA10MINI_THIRD_PARTY_DIR}/libdl")
 
-if (UNIX)
-include_directories ("/usr/include/qwt")
-endif()
+foreach(submodule_dir IN ITEMS "${PA10MINI_QWT_DIR}" "${PA10MINI_LIBDL_DIR}")
+    if(NOT EXISTS "${submodule_dir}/CMakeLists.txt")
+        message(FATAL_ERROR
+            "A required dependency submodule is missing or not initialized: ${submodule_dir}.\n"
+            "Run 'git submodule update --init --recursive' from the repository root and reconfigure.")
+    endif()
+endforeach()
 
-if (WIN32)
-include_directories ("C:/Qwt-6.1.4/include")
+# The Qwt CMake subproject supports both Qt 5 and Qt 6, but defaults to Qt 6.
+set(QWT_QT_MAJOR_VERSION 5 CACHE STRING "Qt major version used by Qwt" FORCE)
+set(WITH_EXAMPLES OFF CACHE BOOL "Build Qwt examples" FORCE)
+
+add_subdirectory("${PA10MINI_QWT_DIR}"
+                 "${CMAKE_CURRENT_BINARY_DIR}/third_party/qwt" EXCLUDE_FROM_ALL)
+
+# dlfcn-win32 supplies dlopen/dlsym on Windows. Its subproject is included on
+# every platform; its own CMakeLists only creates the library target on Windows.
+add_subdirectory("${PA10MINI_LIBDL_DIR}"
+                 "${CMAKE_CURRENT_BINARY_DIR}/third_party/libdl" EXCLUDE_FROM_ALL)
+
+# The Qwt CMake port currently adds QWT_DLL definitions unconditionally on
+# Windows. Remove its DLL annotations when the consumer requests static libs.
+if(WIN32 AND NOT BUILD_SHARED_LIBS)
+    set_property(TARGET qwt PROPERTY COMPILE_DEFINITIONS "")
+    set_property(TARGET qwt PROPERTY INTERFACE_COMPILE_DEFINITIONS "")
 endif()
 
 list(APPEND pa10_SOURCES
@@ -121,6 +144,7 @@ list(APPEND pa10_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/schemeview.cpp
     ${CMAKE_CURRENT_LIST_DIR}/pax_prototype.cpp
     ${CMAKE_CURRENT_LIST_DIR}/circuititemedit.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/settingsdialog.cpp
 )
 
 list(APPEND QRCS
@@ -129,10 +153,36 @@ list(APPEND QRCS
 
 add_executable(PA10mini ${pa10_SOURCES} ${QRCS})
 
-if (MSVC)
-    link_directories("C:/Qwt-6.1.4/lib")
-    #set (QWTLIBDIR "C:/Qwt-6.1.4/lib")
-    target_link_libraries(PA10mini Qt5::Core Qt5::Widgets Qt5::Gui Qt5::OpenGL "C:/Qwt-6.1.4/lib/qwt.lib")
-else ()
-    target_link_libraries(PA10mini Qt5::Core Qt5::Widgets Qt5::Gui Qt5::OpenGL qwt stdc++ m dl)
-endif ()
+target_include_directories(PA10mini PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}/manzhuk/fcttask"
+    "${CMAKE_CURRENT_LIST_DIR}/manzhuk"
+)
+
+target_link_libraries(PA10mini PRIVATE
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Widgets
+    Qt5::OpenGL
+    qwt
+)
+
+if(WIN32)
+    target_link_libraries(PA10mini PRIVATE dl)
+else()
+    target_link_libraries(PA10mini PRIVATE ${CMAKE_DL_LIBS})
+endif()
+
+# When shared third-party libraries are requested, place their runtime DLLs
+# beside the executable so it can be launched from the build directory.
+if(WIN32 AND BUILD_SHARED_LIBS)
+    foreach(runtime_target IN ITEMS qwt dl)
+        if(TARGET ${runtime_target})
+            add_custom_command(TARGET PA10mini POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "$<TARGET_FILE:${runtime_target}>"
+                    "$<TARGET_FILE_DIR:PA10mini>"
+                VERBATIM
+            )
+        endif()
+    endforeach()
+endif()

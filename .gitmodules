@@ -1,0 +1,8 @@
+[submodule "PA10mini_all/third_party/qwt"]
+	path = PA10mini_all/third_party/qwt
+	url = https://github.com/xantares/qwt-cmake.git
+	branch = cmake
+
+[submodule "PA10mini_all/third_party/libdl"]
+	path = PA10mini_all/third_party/libdl
+	url = https://github.com/dlfcn-win32/dlfcn-win32.git
