@@ -125,10 +125,12 @@ if(WIN32 AND NOT BUILD_SHARED_LIBS)
     set_property(TARGET qwt PROPERTY INTERFACE_COMPILE_DEFINITIONS "")
 endif()
 
+add_library(manzhuk STATIC ${CMAKE_CURRENT_LIST_DIR}/manzhuk/manzhuk.cpp)
+target_include_directories(manzhuk PUBLIC ${CMAKE_CURRENT_LIST_DIR}/manzhuk/)
+
 list(APPEND pa10_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/solver.cpp
     ${CMAKE_CURRENT_LIST_DIR}/textdriver.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/manzhuk/manzhuk.cpp
     ${CMAKE_CURRENT_LIST_DIR}/plot.cpp
     ${CMAKE_CURRENT_LIST_DIR}/scanner.cpp
     ${CMAKE_CURRENT_LIST_DIR}/main.cpp
@@ -163,6 +165,7 @@ target_link_libraries(PA10mini PRIVATE
     Qt5::Widgets
     Qt5::OpenGL
     qwt
+    manzhuk
 )
 
 if(WIN32)
