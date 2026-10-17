@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
 project(PA10mini LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Qwt's Windows headers export/import symbols for shared builds, which is the
@@ -88,7 +88,9 @@ find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets OpenGL Concurrent PrintSup
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
+# AUTOUIC adds its generated include directory automatically. Do not add the
+# build root: old qmake ui_*.h files there can shadow the current CMake headers.
+set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 
 
 ################################################################################
@@ -125,8 +127,13 @@ if(WIN32 AND NOT BUILD_SHARED_LIBS)
     set_property(TARGET qwt PROPERTY INTERFACE_COMPILE_DEFINITIONS "")
 endif()
 
-#add_library(manzhuk STATIC ${CMAKE_CURRENT_LIST_DIR}/manzhuk/manzhuk.cpp)
-#target_include_directories(manzhuk PUBLIC ${CMAKE_CURRENT_LIST_DIR}/manzhuk/)
+# Build with the selected compiler: the checked-in manzhuk.lib uses the MSVC
+# C++ ABI and cannot be linked by MinGW (or on non-Windows platforms).
+add_library(manzhuk STATIC
+    ${CMAKE_CURRENT_LIST_DIR}/manzhuk/manzhuk.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/manzhuk/manzhuk.h
+)
+target_include_directories(manzhuk PUBLIC ${CMAKE_CURRENT_LIST_DIR}/manzhuk)
 
 list(APPEND pa10_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/solver.cpp
@@ -152,9 +159,21 @@ list(APPEND QRCS
     ${CMAKE_CURRENT_LIST_DIR}/pax_prototype.qrc
 )
 
-add_executable(PA10mini ${pa10_SOURCES} ${QRCS})
+# Keep the forms from pa10mini.pro in the target so AUTOUIC generates their
+# headers and Qt Creator exposes them in the project tree.
+set(pa10_FORMS
+    ${CMAKE_CURRENT_LIST_DIR}/circuititemedit.ui
+    ${CMAKE_CURRENT_LIST_DIR}/pax_prototype.ui
+    ${CMAKE_CURRENT_LIST_DIR}/plotwindow.ui
+    ${CMAKE_CURRENT_LIST_DIR}/settingsdialog.ui
+    ${CMAKE_CURRENT_LIST_DIR}/solverparam.ui
+    ${CMAKE_CURRENT_LIST_DIR}/variablechooser.ui
+)
+
+add_executable(PA10mini ${pa10_SOURCES} ${pa10_FORMS} ${QRCS})
 
 target_include_directories(PA10mini PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}"
     "${CMAKE_CURRENT_LIST_DIR}/manzhuk/fcttask"
     "${CMAKE_CURRENT_LIST_DIR}/manzhuk"
 )
@@ -165,7 +184,7 @@ target_link_libraries(PA10mini PRIVATE
     Qt5::Widgets
     Qt5::OpenGL
     qwt
-    ${CMAKE_CURRENT_LIST_DIR}/manzhuk/manzhuk.lib
+    manzhuk
 )
 
 if(WIN32)
